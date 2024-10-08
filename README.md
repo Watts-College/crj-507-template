@@ -1,2 +1,2 @@
-# crj-507-spring-2024
+# crj-507-template
 Course shell for CRJ 507. 
