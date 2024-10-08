@@ -1,0 +1,65 @@
+---
+title: "Lab 01 - Introduction to Network Analysis - INSTRUCTIONS"
+date: "CRJ 507 Social Network Analysis"
+output: 
+  html_document:
+    df_print: paged
+    theme: cosmo
+    highlight: haddock
+    toc: yes
+    toc_float: yes
+    code_fold: show
+    self_contained: true
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+For the first lab, I would like you to construct a network. Think about a type of relationship that is interesting, important, etc. and what it connects. Whatever floats your boat. It can be a real example from your life, something fictitious, anything really. 
+
+**IMPORTANT**: *read through the instructions completely before deciding what you will choose*.
+
+## Part I
+
+*After making your decision, do the following*:
+
+### A. Describe the network 
+
+  1. Is the network one mode or multi-mode?
+  2. What do the points (i.e. nodes) represent? (note: if multiple modes, be sure to describe each mode)
+  3. What do the ties (i.e. edges) represent?
+  4. Are the ties simplex or multiplex? (note: if multiplex, be sure to describe each edge)
+  5. Are the ties undirected or directed? Binary/Weighted/Signed?
+  6. Why type of edge is it? (social relationship? Interactions? Flow?)
+  7. Why did you pick this network?
+    
+### B. Draw a picture of the network (by hand is fine)
+  
+____  
+
+## Part II
+
+After completing Part I, choose a new network and repeat Part I on that network.
+
+____
+
+# How to Submit
+
+Upload a `.pdf` or `.docx` file to the appropriate link for this assignment on the Canvas page for this course.
+
+____
+
+<br>
+
+##### ***Please*** report any needed corrections to the [Issues](https://github.com/Watts-College/crj-507-spring-2024/issues/new) page. Thanks!
+
+<br>
+<br>

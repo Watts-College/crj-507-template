@@ -1,0 +1,339 @@
+---
+title: "Final Project - SOLUTIONS"
+output: 
+  html_document:
+    df_print: paged
+    theme: journal
+    highlight: haddock
+    toc: yes
+    toc_float: yes
+    code_fold: show
+    self_contained: true
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set( echo = FALSE,
+                       eval = TRUE,
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.width = 10, 
+                      fig.height = 6 )
+
+```
+
+<br>
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# clear the workspace
+rm( list = ls() )
+
+# load the libraries you will need
+library( network )
+library( sna )
+
+# Load the networks
+
+# set the url
+loc <- "https://github.com/jacobtnyoung/sna-textbook/raw/main/data/data-PHX-arrest-2023-net.rds"
+
+# for the 2023
+PhxArrestNet2023 <- readRDS( url( loc ) )
+
+# set the url
+loc <- "https://github.com/jacobtnyoung/sna-textbook/raw/main/data/data-PHX-arrest-2022-net.rds"
+
+# for the 2022
+PhxArrestNet2022 <- readRDS( url( loc ) )
+
+```
+
+```{r setup-functions, echo = FALSE, eval = TRUE}
+
+# This section sets up the functions we will use in the report
+
+# node rescale function
+rescale <- function( nchar, low, high ){
+  min_d <- min( nchar )
+  max_d <- max( nchar )
+  rscl  <- ( ( high - low )*( nchar - min_d ) ) / ( max_d - min_d ) + low
+  rscl
+}
+
+# edge rescale function
+edge.rescale <- function( uniMat, low, high ){
+  diag( uniMat ) <- 0
+  min_w <- min( uniMat[uniMat != 0] )
+  max_w <- max( uniMat[uniMat != 0] )
+  rscl <- ( ( high-low )  * ( uniMat[uniMat != 0] - min_w ) ) / ( max_w - min_w ) + low
+  rscl
+}
+
+# edge shading fuction
+edge.shade <- function( uniMat ){
+  net.edges <- edge.rescale( uniMat, 0.01, 1 )
+  vec.to.color <- as.vector( abs( net.edges ) )
+  vec.to.color <- 1 - vec.to.color # subtract 1 to flip the grey function scale.
+  edge.cols <- grey( vec.to.color )
+  return( edge.cols )
+}
+
+
+```
+
+## Part I: Two-Mode Network
+
+```{r part-I-object-setup, echo=FALSE, eval=TRUE}
+
+# This builds all the objects I want to use in the report.
+# They are built here, but the code does not show in the report.
+
+# ---- 
+# calculate the density of the network
+
+PhxArrestNet2023Mat <- as.matrix( PhxArrestNet2023 ) # create a matrix from the network object
+L <- sum( PhxArrestNet2023Mat )                      # identify the number of edges in the graph
+N <- dim( PhxArrestNet2023Mat )[1]                   # identify the number of actors in the example
+M <- dim( PhxArrestNet2023Mat )[2]                   # identify the number of events in the example
+density.PhxArrestNet2023Mat <- L / ( N * M )         # calculate the density
+
+
+# ----
+# calculate the degree centrality scores for each set of nodes  
+
+actor.deg <- rowSums( PhxArrestNet2023Mat ) # raw scores for actors
+event.deg <- colSums( PhxArrestNet2023Mat ) # raw scores for events
+
+# calculate the mean degree centrality scores
+mean.actor.deg <- L / N # mean degree for actors
+mean.event.deg <- L / M # mean degree for events
+
+
+# ----
+# calculate the standardized degree centrality scores for each set of nodes  
+# we need these for the comparisons in part III
+
+s.actor.deg <- actor.deg / M # standardized score for actors
+s.event.deg <- event.deg / N # standardized score for events
+
+```
+
+### *What can you tell me about this network?* 
+
+```{r part-I-net, echo=FALSE, eval=TRUE, fig.width=10, fig.height=10, fig.fullwidth=TRUE}
+
+# set the plot regions to ease with visualization
+par( 
+  mfrow = c( 1, 1 ),
+  mar = c( 2, 1, 4, 1)
+  )
+
+# set the seed to reproduce the plot layout
+set.seed( 507 )
+
+# execute the plot
+gplot(
+  PhxArrestNet2023,                        # our network to plot
+  gmode = "twomode",                       # indicate it is two modes
+  usearrows = FALSE,                       # turn off the arrowheads
+  main="Phoenix Co-Arrest Network (2023)", # add a title
+  vertex.col = cbind( 
+    rep( "#34ebcf", dim(PhxArrestNet2023Mat )[1] ),
+    rep( "#484a69", dim(PhxArrestNet2023Mat )[2] ) ),
+  vertex.cex = rescale( cbind( actor.deg, event.deg ), 0.2, 3 ) # size the nodes
+)
+
+```
+
+#### Density
+
+The density of for the `PhxArrestNet2023` network indicates that `r round( density.PhxArrestNet2023Mat, 3 ) * 100` percent of the ties that could be observed, were observed. This also means that `r 1 - round( density.PhxArrestNet2023Mat, 3 ) * 100` of the ties that could have occurred were not observed. Overall, we can say that the network is fairly *sparse*.
+
+<br>
+
+#### Degree Centrality
+
+For the first set of nodes, the mean degree is `r round( mean.actor.deg, 2 )`, meaning that on average, individuals were arrested `r round( mean.actor.deg, 2 )` times together. For the second set of nodes, the incidents where individuals were arrested together, the mean degree is `r round( mean.event.deg, 2 )`, meaning that each incident, on average, had `r round( mean.event.deg, 2 )` individuals arrested. The variation in these scores is visualized in the plot below:  
+
+```{r part-I-bar-plots, echo=FALSE, eval=TRUE, fig.width=10, fig.height=5, fig.fullwidth=TRUE}
+
+# set the plot regions to ease with visualization
+par( 
+  mfrow = c( 1, 2 ),
+  mar = c( 2, 1, 4, 1)
+  )
+
+# plot the degree distributions
+hist( actor.deg,
+      main = "Degree Distribution for Arrestees",
+      col = "#34ebcf",
+      breaks = 20
+      )
+
+hist( event.deg,
+      main = "Degree Distribution for Incidents",
+      breaks = 20,
+      col = "#484a69"
+      )
+
+```
+
+<br>
+
+----
+
+<br>
+
+## Part II: One-Mode Network
+
+```{r part-II-object-setup, echo=FALSE, eval=TRUE}
+
+# This builds all the objects I want to use in Part II of the report.
+# They are built here, but the code does not show in the report.
+
+# ---- 
+# create the projections
+
+# create the "person" matrix
+PhxArrestNet2023MatP <- PhxArrestNet2023Mat %*% t( PhxArrestNet2023Mat )
+
+
+# ----
+# create the raw centrality scores
+
+# degree
+deg.arrest <- degree( PhxArrestNet2023MatP, gmode = "graph", cmode = "degree" )
+
+# closeness
+g <- dim( as.matrix( PhxArrestNet2023MatP ) )[1]
+close.arrest <- closeness( PhxArrestNet2023MatP, gmode="graph" ) / ( g - 1 )
+
+# betweenness
+btwn.arrest <- betweenness( PhxArrestNet2023MatP, gmode="graph" )
+
+
+# ----
+# create the standardized centrality scores
+
+s.deg.arrest <- deg.arrest / ( g - 1 ) # standardized score is deg / g-1 where g is the number of nodes
+s.close.arrest <- closeness( PhxArrestNet2023MatP, gmode="graph" ) # standardized closeness is the score reported by default
+s.btwn.arrest <- btwn.arrest / ( ( ( g-1 ) * ( g-2 ) ) / 2 ) # standardized betweenness is the betweenness / ( ( ( g-1 ) * ( g-2 ) ) / 2 )
+
+
+# ----
+# mean degree and standardized degree
+
+mean.deg.arrest    <- mean( deg.arrest )
+mean.close.arrest  <- mean( close.arrest )
+mean.btwn.arrest   <- mean( btwn.arrest )
+mean.s.deg.arrest   <- mean( s.deg.arrest )
+mean.s.close.arrest <- mean( s.close.arrest )
+mean.s.btwn.arrest  <- mean( s.btwn.arrest )
+
+
+# ----
+# calculate the graph centralization for degree, closeness, and betweenness centrality
+
+dcent.arrest <- centralization( PhxArrestNet2023MatP, degree, mode="graph", cmode="degree" )
+ccent.arrest <- centralization( PhxArrestNet2023MatP, closeness, mode="graph" )
+bcent.arrest <- centralization( PhxArrestNet2023MatP, betweenness, mode="graph" )
+
+
+```
+
+### *Who are the central actors in this network?* 
+
+```{r part-II-net, echo=FALSE, eval=TRUE, fig.width=10, fig.height=10, fig.fullwidth=TRUE}
+
+# render the plot
+gplot( 
+  PhxArrestNet2023MatP,
+  gmode = "graph",
+  vertex.col = "#34ebcf",
+  main = "One Mode Projection of Co-Arrests (Person Matrix) Network"
+  )
+
+
+
+```
+
+#### Centrality
+
+In summarizing the centrality scores for the network, we can say the following:  
+
+  * The mean *degree* centrality score is `r mean.deg.arrest` meaning that the average node has `r mean.deg.arrest` edges incident on them.   
+  * The mean *closeness* centrality score is `r mean.close.arrest`, meaning that the average node is very close to all other nodes in the network.   
+  * Finally, the mean betweenness centrality score is `r mean.btwn.arrest`, meaning that the average node sits on `r mean.btwn.arrest` paths between *i* and *j*.   
+
+To visualize these differences, the plot below shows the co-arrest network where the nodes are sized by degree, closeness, and betweenness centrality scores, respectively.
+
+```{r part-II-net-cent, echo=FALSE, eval=TRUE, fig.width=10, fig.height=10, fig.fullwidth=TRUE}
+
+# create the inputs for the loop
+titles  <- c( "Degree", "Closeness", "Betweenness")
+cols    <- c( "#5c1233", "#0c7091", "#949c7b" )
+v.sizes <- cbind( deg.arrest, close.arrest, btwn.arrest )
+
+# change the margins using the mar= argument
+# change the number of plots using the mfrow= argument
+par( 
+  mfrow=c( 2,2 ),
+  mar=c( 0.1, 0.5, 1, 0.1 ) 
+  )
+
+for( i in 1:3 ){
+  
+  # set the seed
+  set.seed( 507 )
+
+  # render the plot
+  gplot( 
+  PhxArrestNet2023MatP,
+  gmode = "graph",
+  vertex.col = cols[i],
+  vertex.cex = rescale( v.sizes[,i], 0.5, 1.5 ),
+  main = titles[i]
+  )
+
+}
+
+```
+
+#### Centralization
+
+Regarding the centralization of the network for each centrality score:  
+
+  * The *degree* centralization score is `r round( dcent.arrest, 2 )` meaning that...  
+  * The *closeness* centralization score is `r round( ccent.arrest, 2 )` ...
+  * The *betweenness* centralization score is `r round( bcent.arrest, 2 )` ... 
+
+As these summaries indicate...COMPARISON
+
+```{r, echo = FALSE}
+
+# reset the plot layout
+par( mfrow=c( 2,2 ) )
+
+# clear the workspace
+rm( list = ls() )
+
+```
+
+<br>
+
+----
+
+<br>
+
+## Part III: Comparison
+
+*How has the co-offending network changed from 2022 to 2023?* 
+
+YOUR ANSWER TO THIS QUESTION HERE (THEN DELETE THIS LINE)
+
+```{r, echo=FALSE}
+
+# your code here for creating objects here
+
+```
